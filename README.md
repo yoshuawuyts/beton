@@ -46,9 +46,9 @@
 $ cargo add tree-slab
 ```
 
-## Safety
-This crate uses ``#![deny(unsafe_code)]`` to ensure everything is implemented in
-100% Safe Rust.
+## Memory Safety
+This crate uses unsafe operations internally to maintain a sparse data
+structure. This crate is tested using `miri` to ensure memory safety.
 
 ## Contributing
 Want to join us? Check out our ["Contributing" guide][contributing] and take a
