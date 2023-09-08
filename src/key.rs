@@ -2,6 +2,12 @@
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 pub struct Key(usize);
 
+impl Key {
+    pub(crate) fn new(index: usize) -> Key {
+        Self(index)
+    }
+}
+
 impl From<Key> for usize {
     #[inline(always)]
     fn from(value: Key) -> Self {

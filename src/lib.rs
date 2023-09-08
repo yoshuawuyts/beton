@@ -23,8 +23,9 @@
 #![deny(missing_debug_implementations, nonstandard_style)]
 #![warn(missing_docs, future_incompatible, unreachable_pub)]
 
+mod bit_tree;
 mod key;
 mod slab;
 
+pub use self::slab::Slab;
 pub use key::Key;
-pub use slab::Slab;
