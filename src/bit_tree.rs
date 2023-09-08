@@ -85,18 +85,12 @@ impl BitTree {
 
     /// Resize the Index
     pub(crate) fn resize(&mut self, new_len: usize) {
-        dbg!(new_len);
         let current_length = self.entries.len();
-        dbg!(current_length);
         self.entries.resize(new_len, false);
-        dbg!("after");
 
         if new_len < current_length {
-            dbg!("counting");
             self.count = self.occupied().count();
-            dbg!("counted");
         }
-        dbg!("done");
     }
 
     /// Create an iterator over the indexes occupied by items.
