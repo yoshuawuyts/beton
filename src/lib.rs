@@ -6,7 +6,7 @@
 //! which makes it expensive to iterate over. According to [slab's
 //! iterator docs](https://docs.rs/slab/0.4.9/slab/struct.Slab.html#method.iter):
 //!
-//! > \[`Slab::iter`\] should generally be avoided as it is not efficient.
+//! > `Slab::iter` should generally be avoided as it is not efficient.
 //! > Iterators must iterate over every slot in the slab even if it is vacant. As
 //! > such, a slab with a capacity of 1 million but only one stored value must
 //! > still iterate the million slots.
@@ -29,5 +29,5 @@ mod key;
 mod slab;
 
 pub use self::slab::Slab;
-pub use iter::{IntoIter, IntoValues, Iter, IterMut, Values, ValuesMut};
+pub use iter::{IntoIter, IntoValues, Iter, IterMut, Keys, Values, ValuesMut};
 pub use key::Key;

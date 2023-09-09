@@ -1,5 +1,5 @@
 use crate::{bit_tree::BitTree, IterMut};
-use crate::{IntoIter, IntoValues, Iter, Key, Values, ValuesMut};
+use crate::{IntoIter, IntoValues, Iter, Key, Keys, Values, ValuesMut};
 
 use std::mem::{self, MaybeUninit};
 
@@ -127,6 +127,7 @@ impl<T> Slab<T> {
     pub fn capacity(&self) -> usize {
         self.index.capacity()
     }
+
     /// Returns an iterator over all key-value pairs.
     ///
     /// The iterator yields all items from start to end.
@@ -140,6 +141,13 @@ impl<T> Slab<T> {
     /// The iterator yields all items from start to end.
     pub fn iter_mut(&mut self) -> IterMut<'_, T> {
         self.into_iter()
+    }
+
+    /// Returns an iterator over all keys.
+    ///
+    /// The iterator yields all keys from start to end.
+    pub fn keys(&self) -> Keys<'_> {
+        Keys::new(self)
     }
 
     /// Returns an iterator over all values.
