@@ -1,7 +1,7 @@
 use std::mem::MaybeUninit;
 
 use crate::bit_tree::Occupied;
-use crate::Slab;
+use crate::{Key, Slab};
 
 /// An borrowing iterator over items in the `Slab`.
 #[derive(Debug)]
@@ -19,7 +19,7 @@ impl<'a, T> Iter<'a, T> {
 }
 
 impl<'a, T> Iterator for Iter<'a, T> {
-    type Item = &'a T;
+    type Item = (Key, &'a T);
 
     fn next(&mut self) -> Option<Self::Item> {
         let index = self.occupied.next()?;
@@ -27,7 +27,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
             // SAFETY: We just validated that the index contains a key
             // for this value, meaning we can safely assume that this
             // value is initialized.
-            unsafe { v.assume_init_ref() }
+            (index.into(), unsafe { v.assume_init_ref() })
         })
     }
 }
@@ -44,8 +44,8 @@ mod test {
         slab.insert(3);
         slab.remove(key);
         let mut iter = Iter::new(&slab);
-        assert_eq!(iter.next(), Some(&1));
-        assert_eq!(iter.next(), Some(&3));
+        assert_eq!(iter.next(), Some((0.into(), &1)));
+        assert_eq!(iter.next(), Some((2.into(), &3)));
         assert_eq!(iter.next(), None);
     }
 }

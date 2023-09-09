@@ -127,14 +127,15 @@ impl<T> Slab<T> {
     pub fn capacity(&self) -> usize {
         self.index.capacity()
     }
-    /// Returns an iterator over all items.
+    /// Returns an iterator over all key-value pairs.
     ///
     /// The iterator yields all items from start to end.
     pub fn iter(&self) -> Iter<'_, T> {
         self.into_iter()
     }
 
-    /// Returns an iterator that allows modifying each value.
+    /// Returns an iterator over key-value pairs that allows modifying each
+    /// value.
     ///
     /// The iterator yields all items from start to end.
     pub fn iter_mut(&mut self) -> IterMut<'_, T> {
@@ -164,7 +165,7 @@ impl<T> Slab<T> {
 }
 
 impl<T> IntoIterator for Slab<T> {
-    type Item = T;
+    type Item = (Key, T);
     type IntoIter = IntoIter<T>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -173,7 +174,7 @@ impl<T> IntoIterator for Slab<T> {
 }
 
 impl<'a, T> IntoIterator for &'a Slab<T> {
-    type Item = &'a T;
+    type Item = (Key, &'a T);
     type IntoIter = Iter<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -182,7 +183,7 @@ impl<'a, T> IntoIterator for &'a Slab<T> {
 }
 
 impl<'a, T> IntoIterator for &'a mut Slab<T> {
-    type Item = &'a mut T;
+    type Item = (Key, &'a mut T);
     type IntoIter = IterMut<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {

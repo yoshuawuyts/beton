@@ -2,6 +2,7 @@ use std::mem::{self, MaybeUninit};
 use std::ptr;
 
 use crate::bit_tree::IntoOccupied;
+use crate::Key;
 
 /// An owned iterator over items in the `Slab`.
 #[derive(Debug)]
@@ -30,7 +31,7 @@ impl<T> IntoIter<T> {
 }
 
 impl<T> Iterator for IntoIter<T> {
-    type Item = T;
+    type Item = (Key, T);
 
     fn next(&mut self) -> Option<Self::Item> {
         // Get the item at index.
@@ -38,7 +39,7 @@ impl<T> Iterator for IntoIter<T> {
         let output = mem::replace(&mut self.entries[index], MaybeUninit::uninit());
 
         // SAFETY: we just confirmed that there was in fact an entry at this index
-        Some(unsafe { output.assume_init() })
+        Some((index.into(), unsafe { output.assume_init() }))
     }
 }
 
@@ -64,8 +65,8 @@ mod test {
         slab.insert(3);
         slab.remove(key);
         let mut iter = IntoIter::new(slab);
-        assert_eq!(iter.next(), Some(1));
-        assert_eq!(iter.next(), Some(3));
+        assert_eq!(iter.next(), Some((0.into(), 1)));
+        assert_eq!(iter.next(), Some((2.into(), 3)));
         assert_eq!(iter.next(), None);
     }
 }

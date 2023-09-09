@@ -1,7 +1,7 @@
 use std::mem::MaybeUninit;
 
 use crate::bit_tree::Occupied;
-use crate::Slab;
+use crate::{Key, Slab};
 
 /// A mutable iterator over items in the `Slab`.
 #[derive(Debug)]
@@ -26,7 +26,7 @@ impl<'a, T> IterMut<'a, T> {
 }
 
 impl<'a, T> Iterator for IterMut<'a, T> {
-    type Item = &'a mut T;
+    type Item = (Key, &'a mut T);
 
     fn next(&mut self) -> Option<Self::Item> {
         // Get the next index and update all cursors
@@ -39,7 +39,9 @@ impl<'a, T> Iterator for IterMut<'a, T> {
         advance_by(&mut self.entries, skip);
 
         // SAFETY: we just confirmed that there was in fact an entry at this index
-        self.entries.next().map(|t| unsafe { t.assume_init_mut() })
+        self.entries
+            .next()
+            .map(|t| (index.into(), unsafe { t.assume_init_mut() }))
     }
 }
 
@@ -63,8 +65,8 @@ mod test {
         slab.insert(3);
         slab.remove(key);
         let mut iter = IterMut::new(&mut slab);
-        assert_eq!(iter.next(), Some(&mut 1));
-        assert_eq!(iter.next(), Some(&mut 3));
+        assert_eq!(iter.next(), Some((0.into(), &mut 1)));
+        assert_eq!(iter.next(), Some((2.into(), &mut 3)));
         assert_eq!(iter.next(), None);
     }
 }
