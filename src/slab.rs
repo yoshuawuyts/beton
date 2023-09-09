@@ -199,6 +199,35 @@ impl<'a, T> IntoIterator for &'a mut Slab<T> {
     }
 }
 
+impl<T> FromIterator<T> for Slab<T> {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = T>,
+    {
+        let iter = iter.into_iter();
+        let capacity = iter.size_hint().1.unwrap_or(0);
+        let mut slab = Slab::with_capacity(capacity);
+        for value in iter {
+            slab.insert(value);
+        }
+        slab
+    }
+}
+
+impl<T> Extend<T> for Slab<T> {
+    fn extend<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = T>,
+    {
+        let iter = iter.into_iter();
+        let additional = iter.size_hint().1.unwrap_or(0);
+        self.reserve(additional);
+        for value in iter {
+            self.insert(value);
+        }
+    }
+}
+
 impl<T> Drop for Slab<T> {
     fn drop(&mut self) {
         for index in self.index.occupied() {
