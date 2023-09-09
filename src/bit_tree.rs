@@ -1,7 +1,7 @@
 use std::{mem, ops::Not};
 
 /// An indexing structure implemented as a bit-tree.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub(crate) struct BitTree {
     entries: Vec<bool>,
     count: usize,

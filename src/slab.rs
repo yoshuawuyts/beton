@@ -5,6 +5,7 @@ use std::mem::{self, MaybeUninit};
 use std::ops::{Index, IndexMut};
 
 /// A slab allocator
+#[derive(Default)]
 pub struct Slab<T> {
     pub(crate) index: BitTree,
     pub(crate) entries: Vec<MaybeUninit<T>>,
