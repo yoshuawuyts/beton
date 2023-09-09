@@ -93,6 +93,15 @@ impl BitTree {
         }
     }
 
+    // Find the next occupied entry starting from `index`
+    pub(crate) fn next_occupied(&self, index: usize) -> Option<usize> {
+        self.entries[index..]
+            .iter()
+            .enumerate()
+            .filter_map(|(index, occupied)| occupied.then_some(index))
+            .next()
+    }
+
     /// Create an iterator over the indexes occupied by items.
     pub(crate) fn occupied(&self) -> impl Iterator<Item = usize> + '_ {
         self.entries

@@ -6,8 +6,8 @@ use std::mem::{self, MaybeUninit};
 /// A slab allocator
 #[derive(Debug)]
 pub struct Slab<T> {
-    index: BitTree,
-    entries: Vec<MaybeUninit<T>>,
+    pub(crate) index: BitTree,
+    pub(crate) entries: Vec<MaybeUninit<T>>,
 }
 
 impl<T> Slab<T> {

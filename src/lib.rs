@@ -24,8 +24,10 @@
 #![warn(missing_docs, future_incompatible, unreachable_pub)]
 
 mod bit_tree;
+mod iter;
 mod key;
 mod slab;
 
 pub use self::slab::Slab;
+pub use iter::{IntoIter, Iter};
 pub use key::Key;
