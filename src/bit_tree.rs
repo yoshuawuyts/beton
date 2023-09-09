@@ -93,18 +93,14 @@ impl BitTree {
         }
     }
 
-    // Find the next occupied entry starting from `index`
-    pub(crate) fn next_occupied(&self, index: usize) -> Option<usize> {
-        self.entries[index..]
-            .iter()
-            .enumerate()
-            .filter_map(|(index, occupied)| occupied.then_some(index))
-            .next()
-    }
-
     /// Create an iterator over the indexes occupied by items.
     pub(crate) fn occupied(&self) -> Occupied {
         Occupied::new(self)
+    }
+
+    /// Create an iterator over the indexes occupied by items.
+    pub(crate) fn into_occupied(self) -> IntoOccupied {
+        IntoOccupied::new(self)
     }
 
     /// Create an iterator over the indexes not occupied by items.
@@ -116,6 +112,7 @@ impl BitTree {
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct Occupied<'a> {
     /// What is the current index of the cursor?
     cursor: usize,
@@ -163,7 +160,8 @@ impl<'a> Iterator for Occupied<'a> {
     }
 }
 
-pub(crate) struct OccupiedMut<'a> {
+#[derive(Debug)]
+pub(crate) struct IntoOccupied {
     /// What is the current index of the cursor?
     cursor: usize,
     /// How many items have we seen?
@@ -171,5 +169,41 @@ pub(crate) struct OccupiedMut<'a> {
     /// Have we finished?
     is_done: bool,
     /// The bit tree containing the data
-    bit_tree: &'a mut BitTree,
+    bit_tree: BitTree,
+}
+
+impl IntoOccupied {
+    fn new(bit_tree: BitTree) -> Self {
+        Self {
+            cursor: 0,
+            is_done: false,
+            seen: 0,
+            bit_tree,
+        }
+    }
+}
+
+impl Iterator for IntoOccupied {
+    type Item = usize;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.is_done {
+            return None;
+        }
+
+        for index in self.cursor..self.bit_tree.entries.len() {
+            self.cursor += 1;
+            match self.bit_tree.entries[index] {
+                true => {
+                    self.seen += 1;
+                    if self.seen == self.bit_tree.entries.len() {
+                        self.is_done = true;
+                    }
+                    return Some(index);
+                }
+                false => continue,
+            }
+        }
+        None
+    }
 }
