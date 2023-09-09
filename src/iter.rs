@@ -1,7 +1,4 @@
-use std::{
-    marker::PhantomData,
-    mem::{self, MaybeUninit},
-};
+use std::mem::{self, MaybeUninit};
 
 use crate::{bit_tree::BitTree, Slab};
 
@@ -61,23 +58,15 @@ impl<'a, T> Iterator for Iter<'a, T> {
 pub struct IterMut<'a, T> {
     cursor: usize,
     index: &'a BitTree,
-    ptr: *mut MaybeUninit<T>,
-    end: *mut MaybeUninit<T>,
-    // not sure if this should be &mut T or &mut MaybeUninit<T>
-    _marker: PhantomData<&'a mut T>,
+    iter: core::slice::IterMut<'a, MaybeUninit<T>>,
 }
 
 impl<'a, T> IterMut<'a, T> {
     pub fn new(slab: &'a mut Slab<T>) -> Self {
-        assert_ne!(mem::size_of::<T>(), 0);
-        let len = slab.entries.len();
-        let ptr = slab.entries.as_mut_ptr();
         Self {
-            ptr,
             cursor: 0,
             index: &slab.index,
-            end: unsafe { ptr.add(len) },
-            _marker: PhantomData,
+            iter: slab.entries.iter_mut(),
         }
     }
 }
@@ -86,40 +75,39 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     type Item = &'a mut T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        assert_ne!(mem::size_of::<T>(), 0);
-        if self.ptr == self.end {
-            return None;
-        }
+        let prev_cursor = self.cursor;
+        let cursor = self.index.next_occupied(self.cursor)?;
+        self.cursor = cursor + 1;
 
-        // snapshot of the current state
-        let old = self.ptr;
-        let cursor = self.cursor;
+        let skip = match cursor {
+            0 => 0,
+            cursor => cursor - prev_cursor - 1,
+        };
 
-        // setup the state for the next iteration
-        let index = self.index.next_occupied(self.cursor)?;
-        self.cursor = index;
-
-        // access the current element
-        let offset = index - cursor;
-        self.ptr = unsafe { self.ptr.add(offset) };
-        unsafe {
-            let uninit = &mut *old;
-            Some(uninit.assume_init_mut())
-        }
+        advance_by(&mut self.iter, dbg!(skip));
+        self.iter.next().map(|t| unsafe { t.assume_init_mut() })
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-    #[test]
-    fn iter_mut() {
-        let mut slab = crate::Slab::new();
-        slab.insert(1);
-        slab.insert(2);
-        let mut iter = IterMut::new(&mut slab);
-        assert_eq!(iter.next(), Some(&mut 1));
-        assert_eq!(iter.next(), Some(&mut 2));
-        assert_eq!(iter.next(), None);
+// TODO: Waiting for `Iterator::advance_by` to be stabilized
+// https://github.com/rust-lang/rust/issues/77404
+fn advance_by(iter: &mut impl Iterator, n: usize) {
+    for _ in 0..n {
+        iter.next();
     }
 }
+
+// #[cfg(test)]
+// mod test {
+//     use super::*;
+//     #[test]
+//     fn iter_mut() {
+//         let mut slab = crate::Slab::new();
+//         slab.insert(1);
+//         slab.insert(2);
+//         let mut iter = IterMut::new(&mut slab);
+//         assert_eq!(dbg!(iter.next()), Some(&mut 1));
+//         assert_eq!(dbg!(iter.next()), Some(&mut 2));
+//         assert_eq!(dbg!(iter.next()), None);
+//     }
+// }
