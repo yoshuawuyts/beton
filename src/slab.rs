@@ -1,5 +1,5 @@
-use crate::bit_tree::BitTree;
-use crate::Key;
+use crate::{bit_tree::BitTree, IterMut};
+use crate::{IntoIter, Iter, Key};
 
 use std::mem::{self, MaybeUninit};
 
@@ -126,6 +126,46 @@ impl<T> Slab<T> {
     /// Returns the number of elements the map can hold without reallocating.
     pub fn capacity(&self) -> usize {
         self.index.capacity()
+    }
+    /// Returns an iterator over all items.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter(&self) -> Iter<'_, T> {
+        self.into_iter()
+    }
+
+    /// Returns an iterator that allows modifying each value.
+    ///
+    /// The iterator yields all items from start to end.
+    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
+        self.into_iter()
+    }
+}
+
+impl<T> IntoIterator for Slab<T> {
+    type Item = T;
+    type IntoIter = IntoIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter::new(self)
+    }
+}
+
+impl<'a, T> IntoIterator for &'a Slab<T> {
+    type Item = &'a T;
+    type IntoIter = Iter<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Iter::new(self)
+    }
+}
+
+impl<'a, T> IntoIterator for &'a mut Slab<T> {
+    type Item = &'a mut T;
+    type IntoIter = IterMut<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IterMut::new(self)
     }
 }
 
