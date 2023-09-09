@@ -4,10 +4,15 @@ use crate::Key;
 use std::mem::{self, MaybeUninit};
 
 /// A slab allocator
-#[derive(Debug)]
 pub struct Slab<T> {
     pub(crate) index: BitTree,
     pub(crate) entries: Vec<MaybeUninit<T>>,
+}
+
+impl<T: std::fmt::Debug> std::fmt::Debug for Slab<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Slab").field("index", &self.index).finish()
+    }
 }
 
 impl<T> Slab<T> {
