@@ -29,5 +29,5 @@ mod key;
 mod slab;
 
 pub use self::slab::Slab;
-pub use iter::{IntoIter, Iter, IterMut};
+pub use iter::{IntoIter, IntoValues, Iter, IterMut, Values, ValuesMut};
 pub use key::Key;
