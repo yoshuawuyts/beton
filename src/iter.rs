@@ -5,18 +5,10 @@ use crate::bit_tree::{IntoOccupied, Occupied};
 use crate::Slab;
 
 /// An owned iterator over items in the `Slab`.
+#[derive(Debug)]
 pub struct IntoIter<T> {
     occupied: IntoOccupied,
     entries: Vec<MaybeUninit<T>>,
-}
-
-impl<T: std::fmt::Debug> std::fmt::Debug for IntoIter<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("IntoIter")
-            .field("occupied", &self.occupied)
-            .field("entries", &self.entries)
-            .finish()
-    }
 }
 
 impl<T> IntoIter<T> {
@@ -90,84 +82,94 @@ impl<'a, T> Iterator for Iter<'a, T> {
     }
 }
 
-// /// A mutable iterator over items in the `Slab`.
-// #[derive(Debug)]
-// pub struct IterMut<'a, T> {
-//     cursor: usize,
-//     index: &'a BitTree,
-//     iter: core::slice::IterMut<'a, MaybeUninit<T>>,
-// }
+/// A mutable iterator over items in the `Slab`.
+#[derive(Debug)]
+pub struct IterMut<'a, T> {
+    occupied: Occupied<'a>,
+    entries: core::slice::IterMut<'a, MaybeUninit<T>>,
+    /// What index did we last index? We need this to advance the slice
+    /// iterator.
+    prev_index: Option<usize>,
+}
 
-// impl<'a, T> IterMut<'a, T> {
-//     pub fn new(slab: &'a mut Slab<T>) -> Self {
-//         Self {
-//             cursor: 0,
-//             index: &slab.index,
-//             iter: slab.entries.iter_mut(),
-//         }
-//     }
-// }
+impl<'a, T> IterMut<'a, T> {
+    pub(crate) fn new(slab: &'a mut Slab<T>) -> Self {
+        let occupied = slab.index.occupied();
+        let entries = slab.entries.iter_mut();
+        Self {
+            occupied,
+            entries,
+            prev_index: None,
+        }
+    }
+}
 
-// impl<'a, T> Iterator for IterMut<'a, T> {
-//     type Item = &'a mut T;
+impl<'a, T> Iterator for IterMut<'a, T> {
+    type Item = &'a mut T;
 
-//     fn next(&mut self) -> Option<Self::Item> {
-//         let prev_cursor = self.cursor;
-//         let cursor = self.index.next_occupied(self.cursor)?;
-//         self.cursor = cursor + 1;
+    fn next(&mut self) -> Option<Self::Item> {
+        // Get the next index and update all cursors
+        let index = self.occupied.next()?;
+        let skip = match self.prev_index {
+            None => 0,
+            Some(prev_index) => index - prev_index - 1,
+        };
+        self.prev_index = Some(index);
+        advance_by(&mut self.entries, skip);
 
-//         let skip = match cursor {
-//             0 => 0,
-//             cursor => cursor - prev_cursor - 1,
-//         };
+        // SAFETY: we just confirmed that there was in fact an entry at this index
+        self.entries.next().map(|t| unsafe { t.assume_init_mut() })
+    }
+}
 
-//         advance_by(&mut self.iter, dbg!(skip));
-//         self.iter.next().map(|t| unsafe { t.assume_init_mut() })
-//     }
-// }
-
-// // TODO: Waiting for `Iterator::advance_by` to be stabilized
-// // https://github.com/rust-lang/rust/issues/77404
-// fn advance_by(iter: &mut impl Iterator, n: usize) {
-//     for _ in 0..n {
-//         iter.next();
-//     }
-// }
+// TODO: Waiting for `Iterator::advance_by` to be stabilized
+// https://github.com/rust-lang/rust/issues/77404
+fn advance_by(iter: &mut impl Iterator, n: usize) {
+    for _ in 0..n {
+        iter.next();
+    }
+}
 
 #[cfg(test)]
 mod test {
     use super::*;
 
-    // #[test]
-    // fn iter_mut() {
-    //     let mut slab = crate::Slab::new();
-    //     slab.insert(1);
-    //     slab.insert(2);
-    //     let mut iter = IterMut::new(&mut slab);
-    //     assert_eq!(dbg!(iter.next()), Some(&mut 1));
-    //     assert_eq!(dbg!(iter.next()), Some(&mut 2));
-    //     assert_eq!(dbg!(iter.next()), None);
-    // }
-
     #[test]
     fn into_iter() {
         let mut slab = crate::Slab::new();
         slab.insert(1);
-        slab.insert(2);
+        let key = slab.insert(2);
+        slab.insert(3);
+        slab.remove(key);
         let mut iter = IntoIter::new(slab);
-        assert_eq!(dbg!(iter.next()), Some(1));
-        assert_eq!(dbg!(iter.next()), Some(2));
-        assert_eq!(dbg!(iter.next()), None);
+        assert_eq!(iter.next(), Some(1));
+        assert_eq!(iter.next(), Some(3));
+        assert_eq!(iter.next(), None);
     }
 
     #[test]
     fn iter() {
         let mut slab = crate::Slab::new();
         slab.insert(1);
-        slab.insert(2);
+        let key = slab.insert(2);
+        slab.insert(3);
+        slab.remove(key);
         let mut iter = Iter::new(&slab);
-        assert_eq!(dbg!(iter.next()), Some(&1));
-        assert_eq!(dbg!(iter.next()), Some(&2));
-        assert_eq!(dbg!(iter.next()), None);
+        assert_eq!(iter.next(), Some(&1));
+        assert_eq!(iter.next(), Some(&3));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn iter_mut() {
+        let mut slab = crate::Slab::new();
+        slab.insert(1);
+        let key = slab.insert(2);
+        slab.insert(3);
+        slab.remove(key);
+        let mut iter = IterMut::new(&mut slab);
+        assert_eq!(iter.next(), Some(&mut 1));
+        assert_eq!(iter.next(), Some(&mut 3));
+        assert_eq!(iter.next(), None);
     }
 }
