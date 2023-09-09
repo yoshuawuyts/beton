@@ -2,6 +2,7 @@ use crate::{bit_tree::BitTree, IterMut};
 use crate::{IntoIter, IntoValues, Iter, Key, Keys, Values, ValuesMut};
 
 use std::mem::{self, MaybeUninit};
+use std::ops::{Index, IndexMut};
 
 /// A slab allocator
 pub struct Slab<T> {
@@ -225,6 +226,30 @@ impl<T> Extend<T> for Slab<T> {
         for value in iter {
             self.insert(value);
         }
+    }
+}
+
+/// Returns a reference to the value corresponding to the supplied key.
+///
+/// # Panics
+///
+/// Panics if the key is not present in the `Slab`.
+impl<T> Index<Key> for Slab<T> {
+    type Output = T;
+
+    fn index(&self, index: Key) -> &Self::Output {
+        self.get(index).unwrap()
+    }
+}
+
+/// Returns a mutable reference to the value corresponding to the supplied key.
+///
+/// # Panics
+///
+/// Panics if the key is not present in the `Slab`.
+impl<T> IndexMut<Key> for Slab<T> {
+    fn index_mut(&mut self, index: Key) -> &mut Self::Output {
+        self.get_mut(index).unwrap()
     }
 }
 
