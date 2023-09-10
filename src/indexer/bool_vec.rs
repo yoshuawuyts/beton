@@ -2,12 +2,12 @@ use std::{mem, ops::Not};
 
 /// An indexing structure implemented as a bit-tree.
 #[derive(Debug, Default)]
-pub(crate) struct BitTree {
+pub(crate) struct BoolVec {
     entries: Vec<bool>,
     count: usize,
 }
 
-impl BitTree {
+impl BoolVec {
     /// Create an empty instance of the `index`
     #[allow(unused)]
     pub(crate) fn new() -> Self {
@@ -121,11 +121,11 @@ pub(crate) struct Occupied<'a> {
     /// Have we finished?
     is_done: bool,
     /// The bit tree containing the data
-    bit_tree: &'a BitTree,
+    bit_tree: &'a BoolVec,
 }
 
 impl<'a> Occupied<'a> {
-    fn new(bit_tree: &'a BitTree) -> Self {
+    fn new(bit_tree: &'a BoolVec) -> Self {
         Self {
             cursor: 0,
             is_done: false,
@@ -169,11 +169,11 @@ pub(crate) struct IntoOccupied {
     /// Have we finished?
     is_done: bool,
     /// The bit tree containing the data
-    bit_tree: BitTree,
+    bit_tree: BoolVec,
 }
 
 impl IntoOccupied {
-    fn new(bit_tree: BitTree) -> Self {
+    fn new(bit_tree: BoolVec) -> Self {
         Self {
             cursor: 0,
             is_done: false,

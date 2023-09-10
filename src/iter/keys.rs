@@ -1,4 +1,4 @@
-use crate::bit_tree::Occupied;
+use crate::indexer::Occupied;
 use crate::{Key, Slab};
 
 /// An borrowing iterator over items in the `Slab`.

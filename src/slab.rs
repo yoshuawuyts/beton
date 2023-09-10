@@ -1,5 +1,5 @@
-use crate::{bit_tree::BitTree, IterMut};
-use crate::{IntoIter, IntoValues, Iter, Key, Keys, Values, ValuesMut};
+use crate::indexer::Indexer;
+use crate::{IntoIter, IntoValues, Iter, IterMut, Key, Keys, Values, ValuesMut};
 
 use std::mem::{self, MaybeUninit};
 use std::ops::{Index, IndexMut};
@@ -7,7 +7,7 @@ use std::ops::{Index, IndexMut};
 /// A slab allocator
 #[derive(Default)]
 pub struct Slab<T> {
-    pub(crate) index: BitTree,
+    pub(crate) index: Indexer,
     pub(crate) entries: Vec<MaybeUninit<T>>,
 }
 
@@ -26,7 +26,7 @@ impl<T> Slab<T> {
     /// Creates an empty `Slab` with at least the specified capacity.
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
-            index: BitTree::with_capacity(capacity),
+            index: Indexer::with_capacity(capacity),
             entries: Vec::with_capacity(capacity),
         }
     }

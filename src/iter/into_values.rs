@@ -1,7 +1,7 @@
 use std::mem::{self, MaybeUninit};
 use std::ptr;
 
-use crate::bit_tree::IntoOccupied;
+use crate::indexer::IntoOccupied;
 
 /// An owned iterator over items in the `Slab`.
 #[derive(Debug)]
