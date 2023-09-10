@@ -13,11 +13,22 @@ authors = [
     "Yoshua Wuyts <rust@yosh.is>"
 ]
 
+[profile.bench]
+debug = true
+
+[lib]
+bench = false
+
+[[bench]]
+name = "differential"
+harness = false
+
 [features]
 
 [dependencies]
 
 [dev-dependencies]
 arbitrary = { version = "1.3.0", features = ["derive"] }
+criterion = {version = "0.5.1", features = ["html_reports"] }
 heckcheck = "2.0.1"
 slab = "0.4.9"
