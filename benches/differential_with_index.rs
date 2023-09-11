@@ -61,8 +61,8 @@ fn insert(c: &mut Criterion) {
     let mut group = c.benchmark_group("insert (with index)");
     for i in [10, 100, 1_000, 10_000].iter() {
         group.bench_with_input(BenchmarkId::new("beton", i), i, |b, i| {
-            let setup = || tree_slab::Slab::with_capacity(*i);
-            let routine = |mut slab: tree_slab::Slab<usize>| {
+            let setup = || beton::Slab::with_capacity(*i);
+            let routine = |mut slab: beton::Slab<usize>| {
                 black_box({
                     for n in 0..*i {
                         slab.insert(n);
@@ -103,8 +103,8 @@ fn mutate(c: &mut Criterion) {
     }
 
     group.bench_function(BenchmarkId::new("beton", "main"), |b| {
-        let setup = || tree_slab::Slab::new();
-        let routine = |mut slab: tree_slab::Slab<usize>| {
+        let setup = || beton::Slab::new();
+        let routine = |mut slab: beton::Slab<usize>| {
             black_box({
                 let mut checker = heckcheck::HeckCheck::from_seed(seed);
                 checker.check(|operations: Vec<Operation>| {
@@ -188,7 +188,7 @@ fn iterate(c: &mut Criterion) {
     for i in [10, 100, 1_000, 10_000].iter() {
         group.bench_with_input(BenchmarkId::new("beton", i), i, |b, i| {
             let setup = || {
-                let mut slab = tree_slab::Slab::with_capacity(*i);
+                let mut slab = beton::Slab::with_capacity(*i);
                 let mut total = 0;
                 for n in 0..*i {
                     total += n;
@@ -196,7 +196,7 @@ fn iterate(c: &mut Criterion) {
                 }
                 (slab, total)
             };
-            let routine = |(slab, total): (tree_slab::Slab<usize>, usize)| {
+            let routine = |(slab, total): (beton::Slab<usize>, usize)| {
                 black_box({
                     let mut sum = 0;
                     for (_, n) in slab {

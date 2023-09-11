@@ -1,4 +1,4 @@
-<h1 align="center">tree-slab</h1>
+<h1 align="center">beton</h1>
 <div align="center">
   <strong>
     A tree-backed slab allocator
@@ -9,17 +9,17 @@
 
 <div align="center">
   <!-- Crates version -->
-  <a href="https://crates.io/crates/tree-slab">
-    <img src="https://img.shields.io/crates/v/tree-slab.svg?style=flat-square"
+  <a href="https://crates.io/crates/beton">
+    <img src="https://img.shields.io/crates/v/beton.svg?style=flat-square"
     alt="Crates.io version" />
   </a>
   <!-- Downloads -->
-  <a href="https://crates.io/crates/tree-slab">
-    <img src="https://img.shields.io/crates/d/tree-slab.svg?style=flat-square"
+  <a href="https://crates.io/crates/beton">
+    <img src="https://img.shields.io/crates/d/beton.svg?style=flat-square"
       alt="Download" />
   </a>
   <!-- docs.rs docs -->
-  <a href="https://docs.rs/tree-slab">
+  <a href="https://docs.rs/beton">
     <img src="https://img.shields.io/badge/docs-latest-blue.svg?style=flat-square"
       alt="docs.rs docs" />
   </a>
@@ -27,15 +27,15 @@
 
 <div align="center">
   <h3>
-    <a href="https://docs.rs/tree-slab">
+    <a href="https://docs.rs/beton">
       API Docs
     </a>
     <span> | </span>
-    <a href="https://github.com/yoshuawuyts/tree-slab/releases">
+    <a href="https://github.com/yoshuawuyts/beton/releases">
       Releases
     </a>
     <span> | </span>
-    <a href="https://github.com/yoshuawuyts/tree-slab/blob/master.github/CONTRIBUTING.md">
+    <a href="https://github.com/yoshuawuyts/beton/blob/master.github/CONTRIBUTING.md">
       Contributing
     </a>
   </h3>
@@ -43,7 +43,7 @@
 
 ## Installation
 ```sh
-$ cargo add tree-slab
+$ cargo add beton
 ```
 
 ## Memory Safety
@@ -57,9 +57,9 @@ look at some of these issues:
 - [Issues labeled "good first issue"][good-first-issue]
 - [Issues labeled "help wanted"][help-wanted]
 
-[contributing]: https://github.com/yoshuawuyts/tree-slab/blob/master.github/CONTRIBUTING.md
-[good-first-issue]: https://github.com/yoshuawuyts/tree-slab/labels/good%20first%20issue
-[help-wanted]: https://github.com/yoshuawuyts/tree-slab/labels/help%20wanted
+[contributing]: https://github.com/yoshuawuyts/beton/blob/master.github/CONTRIBUTING.md
+[good-first-issue]: https://github.com/yoshuawuyts/beton/labels/good%20first%20issue
+[help-wanted]: https://github.com/yoshuawuyts/beton/labels/help%20wanted
 
 ## License
 

@@ -16,7 +16,7 @@ fn differential_slab() {
     heckcheck::check(|operations: Vec<Operation>| {
         // Setup both our subject and the oracle
         let mut oracle = slab::Slab::new();
-        let mut subject = tree_slab::Slab::new();
+        let mut subject = beton::Slab::new();
 
         // Apply the same operations in-order to both the subject and the oracle
         // comparing outputs whenever we get any.

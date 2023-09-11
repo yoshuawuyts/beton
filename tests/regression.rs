@@ -1,4 +1,4 @@
-use tree_slab::Slab;
+use beton::Slab;
 
 /// Test we don't go out of bounds when attempting to remove a key which is
 /// currently not in range.

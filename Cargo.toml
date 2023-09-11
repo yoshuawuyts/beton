@@ -1,9 +1,9 @@
 [package]
-name = "tree-slab"
-version = "1.0.0"
+name = "beton"
+version = "0.1.0"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/yoshuawuyts/tree-slab"
-documentation = "https://docs.rs/tree-slab"
+repository = "https://github.com/yoshuawuyts/beton"
+documentation = "https://docs.rs/beton"
 description = "A tree-backed slab allocator"
 readme = "README.md"
 edition = "2021"
