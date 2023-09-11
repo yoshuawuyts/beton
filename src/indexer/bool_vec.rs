@@ -25,6 +25,9 @@ impl BoolVec {
     /// Insert an entry into the index
     #[inline]
     pub(crate) fn insert(&mut self, index: usize) {
+        if index >= self.capacity() {
+            self.resize((self.capacity() + 1) * 2);
+        }
         self.entries[index] = true;
         self.count += 1;
     }
@@ -233,5 +236,44 @@ impl Iterator for IntoOccupied {
             }
         }
         None
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn smoke() {
+        let mut vec = BoolVec::new();
+        let max = 256;
+        for n in 0..max {
+            vec.insert(n);
+            assert!(vec.contains(n));
+        }
+
+        assert_eq!(vec.len(), max);
+
+        for n in 0..max {
+            assert!(vec.contains(n));
+            vec.remove(n);
+            assert!(!vec.contains(n));
+        }
+
+        assert_eq!(vec.len(), 0);
+        assert!(vec.is_empty());
+    }
+
+    #[test]
+    fn occupied() {
+        let mut vec = BoolVec::new();
+        let max = 256;
+        for n in 0..max {
+            vec.insert(n);
+        }
+
+        for (n, index) in vec.into_occupied().enumerate() {
+            assert_eq!(n, index);
+        }
     }
 }
