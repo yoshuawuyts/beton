@@ -1,5 +1,5 @@
 mod bit_vec;
 mod bool_vec;
-mod index;
+mod indexer;
 
-pub(crate) use index::{Indexer, IntoOccupied, Occupied};
+pub(crate) use indexer::{Indexer, IntoOccupied, Occupied};
