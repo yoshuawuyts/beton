@@ -1,5 +1,6 @@
 use super::bit_vec::{self, BitVec};
 use super::bool_vec::{self, BoolVec};
+use super::btree_set::{self, BTreeSet};
 
 /// How many bits should our in-line strucutre hold?
 const CAPACITY: usize = 2;
@@ -7,7 +8,9 @@ const CAPACITY: usize = 2;
 #[derive(Debug)]
 enum Inner {
     BoolVec(BoolVec),
+    #[allow(unused)]
     BitVec(BitVec<CAPACITY>),
+    BTreeSet(BTreeSet),
 }
 
 /// An indexing structure with variable backends.
@@ -27,20 +30,22 @@ impl Indexer {
     #[inline]
     pub(crate) fn new() -> Self {
         Self {
-            inner: Inner::BitVec(BitVec::new()),
+            // inner: Inner::BitVec(BitVec::new()),
+            inner: Inner::BTreeSet(BTreeSet::new()),
         }
     }
 
     /// Initialize the index with capacity
     #[inline]
-    pub(crate) fn with_capacity(capacity: usize) -> Self {
-        if capacity < (u64::BITS as usize * CAPACITY) {
-            Self::new()
-        } else {
-            Self {
-                inner: Inner::BoolVec(BoolVec::with_capacity(capacity)),
-            }
-        }
+    pub(crate) fn with_capacity(_capacity: usize) -> Self {
+        // if capacity < (u64::BITS as usize * CAPACITY) {
+        //     Self::new()
+        // } else {
+        //     Self {
+        //         inner: Inner::BoolVec(BoolVec::with_capacity(capacity)),
+        //     }
+        // }
+        Self::new()
     }
 
     /// Insert an entry into the index
@@ -48,6 +53,7 @@ impl Indexer {
     pub(crate) fn insert(&mut self, index: usize) {
         match self.inner {
             Inner::BoolVec(ref mut vec) => vec.insert(index),
+            Inner::BTreeSet(ref mut vec) => vec.insert(index),
             Inner::BitVec(ref mut vec) => {
                 // Bitvec has a fixed capacity. If we're going to write out of
                 // bounds we should switch over to a `BoolVec` instead.
@@ -67,6 +73,7 @@ impl Indexer {
     pub(crate) fn remove(&mut self, index: usize) -> bool {
         match self.inner {
             Inner::BoolVec(ref mut vec) => vec.remove(index),
+            Inner::BTreeSet(ref mut vec) => vec.remove(index),
             Inner::BitVec(ref mut vec) => vec.remove(index),
         }
     }
@@ -77,6 +84,7 @@ impl Indexer {
         match self.inner {
             Inner::BoolVec(ref mut vec) => vec.clear(),
             Inner::BitVec(ref mut vec) => vec.clear(),
+            Inner::BTreeSet(ref mut vec) => vec.clear(),
         }
     }
 
@@ -86,6 +94,7 @@ impl Indexer {
         match self.inner {
             Inner::BoolVec(ref vec) => vec.contains(index),
             Inner::BitVec(ref vec) => vec.contains(index),
+            Inner::BTreeSet(ref vec) => vec.contains(index),
         }
     }
 
@@ -95,6 +104,7 @@ impl Indexer {
         match self.inner {
             Inner::BoolVec(ref vec) => vec.len(),
             Inner::BitVec(ref vec) => vec.len(),
+            Inner::BTreeSet(ref vec) => vec.len(),
         }
     }
 
@@ -104,6 +114,7 @@ impl Indexer {
         match self.inner {
             Inner::BoolVec(ref vec) => vec.is_empty(),
             Inner::BitVec(ref vec) => vec.is_empty(),
+            Inner::BTreeSet(ref vec) => vec.is_empty(),
         }
     }
 
@@ -113,6 +124,7 @@ impl Indexer {
         match &self.inner {
             Inner::BoolVec(vec) => vec.capacity(),
             Inner::BitVec(vec) => vec.capacity(),
+            Inner::BTreeSet(_) => usize::MAX,
         }
     }
 
@@ -129,6 +141,7 @@ impl Indexer {
                     self.inner = Inner::BoolVec(bool_vec);
                 }
             }
+            Inner::BTreeSet(_) => {}
         }
     }
 
@@ -152,6 +165,7 @@ impl Indexer {
 enum OccupiedInner<'a> {
     BoolVec(bool_vec::Occupied<'a>),
     BitVec(bit_vec::Occupied<'a, CAPACITY>),
+    BTreeSet(btree_set::Occupied<'a>),
 }
 
 #[derive(Debug)]
@@ -169,6 +183,10 @@ impl<'a> Occupied<'a> {
                 let occupied = vec.occupied();
                 Self(OccupiedInner::BitVec(occupied))
             }
+            Inner::BTreeSet(ref vec) => {
+                let occupied = vec.occupied();
+                Self(OccupiedInner::BTreeSet(occupied))
+            }
         }
     }
 }
@@ -180,6 +198,7 @@ impl<'a> Iterator for Occupied<'a> {
         match self.0 {
             OccupiedInner::BoolVec(ref mut vec) => vec.next(),
             OccupiedInner::BitVec(ref mut vec) => vec.next(),
+            OccupiedInner::BTreeSet(ref mut vec) => vec.next(),
         }
     }
 }
@@ -188,6 +207,7 @@ impl<'a> Iterator for Occupied<'a> {
 enum UnOccupiedInner<'a> {
     BoolVec(bool_vec::UnOccupied<'a>),
     BitVec(bit_vec::UnOccupied<'a, CAPACITY>),
+    BTreeSet(btree_set::UnOccupied<'a>),
 }
 
 #[derive(Debug)]
@@ -205,6 +225,10 @@ impl<'a> UnOccupied<'a> {
                 let unoccupied = vec.unoccupied();
                 Self(UnOccupiedInner::BitVec(unoccupied))
             }
+            Inner::BTreeSet(ref vec) => {
+                let unoccupied = vec.unoccupied();
+                Self(UnOccupiedInner::BTreeSet(unoccupied))
+            }
         }
     }
 }
@@ -215,6 +239,7 @@ impl<'a> Iterator for UnOccupied<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         match self.0 {
             UnOccupiedInner::BoolVec(ref mut vec) => vec.next(),
+            UnOccupiedInner::BTreeSet(ref mut vec) => vec.next(),
             UnOccupiedInner::BitVec(ref mut vec) => match vec.next() {
                 Some(index) => Some(index),
                 None => Some(u64::BITS as usize * CAPACITY),
@@ -227,6 +252,7 @@ impl<'a> Iterator for UnOccupied<'a> {
 enum IntoOccupiedInner {
     BoolVec(bool_vec::IntoOccupied),
     BitVec(bit_vec::IntoOccupied<CAPACITY>),
+    BTreeSet(btree_set::IntoOccupied),
 }
 
 #[derive(Debug)]
@@ -244,6 +270,10 @@ impl IntoOccupied {
                 let occupied = vec.into_occupied();
                 Self(IntoOccupiedInner::BitVec(occupied))
             }
+            Inner::BTreeSet(vec) => {
+                let occupied = vec.into_occupied();
+                Self(IntoOccupiedInner::BTreeSet(occupied))
+            }
         }
     }
 }
@@ -255,6 +285,7 @@ impl Iterator for IntoOccupied {
         match &mut self.0 {
             IntoOccupiedInner::BoolVec(ref mut vec) => vec.next(),
             IntoOccupiedInner::BitVec(ref mut vec) => vec.next(),
+            IntoOccupiedInner::BTreeSet(ref mut vec) => vec.next(),
         }
     }
 }
