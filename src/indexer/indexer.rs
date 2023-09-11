@@ -1,4 +1,4 @@
-use super::bit_vec::{self, BitVec};
+use super::bit_array::{self, BitArray};
 use super::bool_vec::{self, BoolVec};
 
 /// How many bits should our in-line strucutre hold?
@@ -7,7 +7,7 @@ const CAPACITY: usize = 2;
 #[derive(Debug)]
 enum Inner {
     BoolVec(BoolVec),
-    BitVec(BitVec<CAPACITY>),
+    BitVec(BitArray<CAPACITY>),
 }
 
 /// An indexing structure with variable backends.
@@ -27,7 +27,7 @@ impl Indexer {
     #[inline]
     pub(crate) fn new() -> Self {
         Self {
-            inner: Inner::BitVec(BitVec::new()),
+            inner: Inner::BitVec(BitArray::new()),
         }
     }
 
@@ -151,7 +151,7 @@ impl Indexer {
 #[derive(Debug)]
 enum OccupiedInner<'a> {
     BoolVec(bool_vec::Occupied<'a>),
-    BitVec(bit_vec::Occupied<'a, CAPACITY>),
+    BitVec(bit_array::Occupied<'a, CAPACITY>),
 }
 
 #[derive(Debug)]
@@ -187,7 +187,7 @@ impl<'a> Iterator for Occupied<'a> {
 #[derive(Debug)]
 enum UnOccupiedInner<'a> {
     BoolVec(bool_vec::UnOccupied<'a>),
-    BitVec(bit_vec::UnOccupied<'a, CAPACITY>),
+    BitVec(bit_array::UnOccupied<'a, CAPACITY>),
 }
 
 #[derive(Debug)]
@@ -226,7 +226,7 @@ impl<'a> Iterator for UnOccupied<'a> {
 #[derive(Debug)]
 enum IntoOccupiedInner {
     BoolVec(bool_vec::IntoOccupied),
-    BitVec(bit_vec::IntoOccupied<CAPACITY>),
+    BitVec(bit_array::IntoOccupied<CAPACITY>),
 }
 
 #[derive(Debug)]

@@ -1,18 +1,16 @@
-use bitvec::array::BitArray;
-
 /// An indexing structure implemented as a bit-tree.
 #[derive(Debug, Default)]
-pub(crate) struct BitVec<const N: usize> {
-    entries: BitArray<[usize; N]>,
+pub(crate) struct BitArray<const N: usize> {
+    entries: bitvec::array::BitArray<[usize; N]>,
     count: usize,
 }
 
-impl<const N: usize> BitVec<N> {
+impl<const N: usize> BitArray<N> {
     /// Create an empty instance of the `index`
     #[allow(unused)]
     pub(crate) fn new() -> Self {
         Self {
-            entries: BitArray::ZERO,
+            entries: bitvec::array::BitArray::ZERO,
             count: 0,
         }
     }
@@ -97,12 +95,12 @@ pub(crate) struct Occupied<'a, const N: usize> {
     /// How many items are we yet to see?
     remaining: usize,
     /// The bit tree containing the data
-    bool_vec: &'a BitVec<N>,
+    bool_vec: &'a BitArray<N>,
 }
 
 impl<'a, const N: usize> Occupied<'a, N> {
     #[inline]
-    fn new(bool_vec: &'a BitVec<N>) -> Self {
+    fn new(bool_vec: &'a BitArray<N>) -> Self {
         Self {
             cursor: 0,
             remaining: bool_vec.len(),
@@ -140,12 +138,12 @@ pub(crate) struct UnOccupied<'a, const N: usize> {
     /// How many items remain?
     remaining: usize,
     /// The bit tree containing the data
-    bool_vec: &'a BitVec<N>,
+    bool_vec: &'a BitArray<N>,
 }
 
 impl<'a, const N: usize> UnOccupied<'a, N> {
     #[inline]
-    fn new(bool_vec: &'a BitVec<N>) -> Self {
+    fn new(bool_vec: &'a BitArray<N>) -> Self {
         Self {
             cursor: 0,
             remaining: bool_vec.capacity() - bool_vec.len(),
@@ -183,12 +181,12 @@ pub(crate) struct IntoOccupied<const N: usize> {
     /// How many items remain?
     remaining: usize,
     /// The bit tree containing the data
-    bool_vec: BitVec<N>,
+    bool_vec: BitArray<N>,
 }
 
 impl<const N: usize> IntoOccupied<N> {
     #[inline]
-    fn new(bool_vec: BitVec<N>) -> Self {
+    fn new(bool_vec: BitArray<N>) -> Self {
         Self {
             cursor: 0,
             remaining: bool_vec.len(),
