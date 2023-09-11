@@ -1,4 +1,4 @@
-// mod bit_vec;
+mod bit_vec;
 mod bool_vec;
 mod index;
 

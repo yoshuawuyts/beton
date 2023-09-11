@@ -5,7 +5,7 @@ fn insert(c: &mut Criterion) {
     let mut group = c.benchmark_group("insert");
     for i in [10, 100, 1_000, 10_000].iter() {
         group.bench_with_input(BenchmarkId::new("beton", i), i, |b, i| {
-            let setup = || tree_slab::Slab::new();
+            let setup = || tree_slab::Slab::with_capacity(*i);
             let routine = |mut slab: tree_slab::Slab<usize>| {
                 black_box({
                     for n in 0..*i {
@@ -17,7 +17,7 @@ fn insert(c: &mut Criterion) {
         });
 
         group.bench_with_input(BenchmarkId::new("slab", i), i, |b, i| {
-            let setup = || slab::Slab::new();
+            let setup = || slab::Slab::with_capacity(*i);
             let routine = |mut slab: slab::Slab<usize>| {
                 black_box({
                     for n in 0..*i {

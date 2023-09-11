@@ -74,11 +74,7 @@ impl<T> Slab<T> {
     ///
     /// Returns the key for the entry.
     pub fn insert(&mut self, value: T) -> Key {
-        if self.index.is_full() {
-            self.reserve(1);
-        }
-
-        let index = self.index.next_unoccupied().unwrap();
+        let index = self.index.unoccupied().next().unwrap();
         self.index.insert(index);
         self.entries.insert(index, MaybeUninit::new(value));
         Key::new(index)
