@@ -30,7 +30,6 @@ harness = false
 [features]
 
 [dependencies]
-bitvec = "1.0.1"
 
 [dev-dependencies]
 arbitrary = { version = "1.3.0", features = ["derive"] }

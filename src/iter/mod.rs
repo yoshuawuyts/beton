@@ -1,4 +1,5 @@
 mod into_iter;
+#[allow(clippy::module_inception)]
 mod iter;
 mod iter_mut;
 
