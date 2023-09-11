@@ -23,7 +23,7 @@ impl<'a, T> Iterator for Values<'a, T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let index = self.occupied.next()?;
-        self.entries.get(usize::from(index)).map(|v| {
+        self.entries.get(index).map(|v| {
             // SAFETY: We just validated that the index contains a key
             // for this value, meaning we can safely assume that this
             // value is initialized.
