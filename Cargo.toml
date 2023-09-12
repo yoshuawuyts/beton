@@ -23,10 +23,6 @@ bench = false
 name = "differential"
 harness = false
 
-[[bench]]
-name = "differential_with_index"
-harness = false
-
 [features]
 
 [dependencies]

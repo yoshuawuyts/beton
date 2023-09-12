@@ -1,21 +1,31 @@
 /// An indexing structure implemented as a bit-tree.
 #[derive(Debug)]
-pub(crate) struct BitArray<const N: usize> {
-    entries: [usize; N],
+pub(crate) struct BitVec {
+    entries: Vec<usize>,
+    count: usize,
 }
 
-impl<const N: usize> Default for BitArray<N> {
+impl Default for BitVec {
     #[inline]
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<const N: usize> BitArray<N> {
+impl BitVec {
     /// Create an empty instance of the `index`
     #[allow(unused)]
     pub(crate) fn new() -> Self {
-        Self { entries: [0; N] }
+        Self::with_capacity(0)
+    }
+
+    /// Create an empty instance of the `index`
+    #[allow(unused)]
+    pub(crate) fn with_capacity(capacity: usize) -> Self {
+        Self {
+            entries: vec![0; capacity],
+            count: 0,
+        }
     }
 
     /// Insert an entry into the index
@@ -27,6 +37,7 @@ impl<const N: usize> BitArray<N> {
         );
         let (index, mask) = compute_index(index);
         self.entries[index] |= mask;
+        self.count += 1;
     }
 
     /// Remove an entry from the index
@@ -36,6 +47,7 @@ impl<const N: usize> BitArray<N> {
         let ret = self.contains(index);
         match self.entries.get_mut(index) {
             Some(entry) => {
+                self.count -= 1;
                 *entry &= !mask;
                 ret
             }
@@ -46,6 +58,7 @@ impl<const N: usize> BitArray<N> {
     /// Clear the entire index
     #[inline]
     pub(crate) fn clear(&mut self) {
+        self.count = 0;
         self.entries.fill(0);
     }
 
@@ -62,45 +75,51 @@ impl<const N: usize> BitArray<N> {
     /// How many items are currently contained?
     #[inline]
     pub(crate) fn len(&self) -> usize {
-        self.entries
-            .iter()
-            .copied()
-            .map(|entry| entry.count_ones() as usize)
-            .sum()
+        self.count
     }
 
     /// Is the structure empty?
     #[inline]
     pub(crate) fn is_empty(&self) -> bool {
-        for entry in self.entries {
-            if entry != 0 {
-                return false;
-            }
-        }
-        true
+        self.len() == 0
     }
 
     /// What is the current capacity?
     #[inline]
     pub(crate) fn capacity(&self) -> usize {
-        usize::BITS as usize * N
+        usize::BITS as usize * self.entries.capacity()
+    }
+
+    /// Resize the Index
+    #[inline]
+    pub(crate) fn resize(&mut self, new_len: usize) {
+        let current_length = self.entries.len();
+        self.entries.resize(new_len, 0);
+
+        if new_len < current_length {
+            self.count = self
+                .entries
+                .iter()
+                .map(|entry| entry.count_ones() as usize)
+                .sum();
+        }
     }
 
     /// Create an iterator over the indexes occupied by items.
     #[inline]
-    pub(crate) fn occupied(&self) -> Occupied<N> {
+    pub(crate) fn occupied(&self) -> Occupied {
         Occupied::new(self)
     }
 
     /// Create an iterator over the indexes occupied by items.
     #[inline]
-    pub(crate) fn into_occupied(self) -> IntoOccupied<N> {
+    pub(crate) fn into_occupied(self) -> IntoOccupied {
         IntoOccupied::new(self)
     }
 
     /// Create an iterator over the indexes not occupied by items.
     #[inline]
-    pub(crate) fn unoccupied(&self) -> UnOccupied<N> {
+    pub(crate) fn unoccupied(&self) -> UnOccupied {
         UnOccupied::new(self)
     }
 }
@@ -113,18 +132,18 @@ const fn compute_index(index: usize) -> (usize, usize) {
 }
 
 #[derive(Debug)]
-pub(crate) struct Occupied<'a, const N: usize> {
+pub(crate) struct Occupied<'a> {
     /// What is the current index of the cursor?
     cursor: usize,
     /// How many items are we yet to see?
     remaining: usize,
     /// The bit tree containing the data
-    bit_array: &'a BitArray<N>,
+    bit_array: &'a BitVec,
 }
 
-impl<'a, const N: usize> Occupied<'a, N> {
+impl<'a> Occupied<'a> {
     #[inline]
-    fn new(bit_array: &'a BitArray<N>) -> Self {
+    fn new(bit_array: &'a BitVec) -> Self {
         Self {
             cursor: 0,
             remaining: bit_array.len(),
@@ -133,7 +152,7 @@ impl<'a, const N: usize> Occupied<'a, N> {
     }
 }
 
-impl<'a, const N: usize> Iterator for Occupied<'a, N> {
+impl<'a> Iterator for Occupied<'a> {
     type Item = usize;
 
     #[inline]
@@ -157,18 +176,18 @@ impl<'a, const N: usize> Iterator for Occupied<'a, N> {
 }
 
 #[derive(Debug)]
-pub(crate) struct UnOccupied<'a, const N: usize> {
+pub(crate) struct UnOccupied<'a> {
     /// What is the current index of the cursor?
     cursor: usize,
     /// How many items remain?
     remaining: usize,
     /// The bit tree containing the data
-    bit_array: &'a BitArray<N>,
+    bit_array: &'a BitVec,
 }
 
-impl<'a, const N: usize> UnOccupied<'a, N> {
+impl<'a> UnOccupied<'a> {
     #[inline]
-    fn new(bit_array: &'a BitArray<N>) -> Self {
+    fn new(bit_array: &'a BitVec) -> Self {
         Self {
             cursor: 0,
             remaining: bit_array.capacity() - bit_array.len(),
@@ -177,7 +196,7 @@ impl<'a, const N: usize> UnOccupied<'a, N> {
     }
 }
 
-impl<'a, const N: usize> Iterator for UnOccupied<'a, N> {
+impl<'a> Iterator for UnOccupied<'a> {
     type Item = usize;
 
     #[inline]
@@ -211,18 +230,18 @@ impl<'a, const N: usize> Iterator for UnOccupied<'a, N> {
 }
 
 #[derive(Debug)]
-pub(crate) struct IntoOccupied<const N: usize> {
+pub(crate) struct IntoOccupied {
     /// What is the current index of the cursor?
     cursor: usize,
     /// How many items remain?
     remaining: usize,
     /// The bit tree containing the data
-    bit_array: BitArray<N>,
+    bit_array: BitVec,
 }
 
-impl<const N: usize> IntoOccupied<N> {
+impl IntoOccupied {
     #[inline]
-    fn new(bit_array: BitArray<N>) -> Self {
+    fn new(bit_array: BitVec) -> Self {
         Self {
             cursor: 0,
             remaining: bit_array.len(),
@@ -231,7 +250,7 @@ impl<const N: usize> IntoOccupied<N> {
     }
 }
 
-impl<const N: usize> Iterator for IntoOccupied<N> {
+impl Iterator for IntoOccupied {
     type Item = usize;
 
     #[inline]
@@ -260,8 +279,7 @@ mod test {
 
     #[test]
     fn smoke() {
-        const LEN: usize = 2;
-        let mut arr: BitArray<LEN> = BitArray::new();
+        let mut arr = BitVec::with_capacity(2);
         let max = arr.capacity();
         for n in 0..max {
             arr.insert(n);
@@ -299,8 +317,7 @@ mod test {
 
     #[test]
     fn occupied() {
-        const LEN: usize = 2;
-        let mut arr: BitArray<LEN> = BitArray::new();
+        let mut arr = BitVec::new();
         let max = arr.capacity();
         for n in 0..max {
             arr.insert(n);

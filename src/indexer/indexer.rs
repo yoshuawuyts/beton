@@ -1,12 +1,12 @@
 use super::bit_array::{self, BitArray};
-use super::bool_vec::{self, BoolVec};
+use super::bit_vec::{self, BitVec};
 
 /// How many bits should our in-line strucutre hold?
 const CAPACITY: usize = 2;
 
 #[derive(Debug)]
 enum Inner {
-    BoolVec(BoolVec),
+    BitVec(BitVec),
     BitArray(BitArray<CAPACITY>),
 }
 
@@ -17,6 +17,7 @@ pub(crate) struct Indexer {
 }
 
 impl Default for Indexer {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -38,7 +39,7 @@ impl Indexer {
             Self::new()
         } else {
             Self {
-                inner: Inner::BoolVec(BoolVec::with_capacity(capacity)),
+                inner: Inner::BitVec(BitVec::with_capacity(capacity)),
             }
         }
     }
@@ -47,10 +48,10 @@ impl Indexer {
     #[inline]
     pub(crate) fn insert(&mut self, index: usize) {
         match self.inner {
-            Inner::BoolVec(ref mut vec) => vec.insert(index),
+            Inner::BitVec(ref mut vec) => vec.insert(index),
             Inner::BitArray(ref mut vec) => {
                 // Bitvec has a fixed capacity. If we're going to write out of
-                // bounds we should switch over to a `BoolVec` instead.
+                // bounds we should switch over to a `BitVec` instead.
                 let capacity = vec.capacity();
                 if index >= capacity {
                     self.resize(capacity * 2);
@@ -66,7 +67,7 @@ impl Indexer {
     #[inline]
     pub(crate) fn remove(&mut self, index: usize) -> bool {
         match self.inner {
-            Inner::BoolVec(ref mut vec) => vec.remove(index),
+            Inner::BitVec(ref mut vec) => vec.remove(index),
             Inner::BitArray(ref mut vec) => vec.remove(index),
         }
     }
@@ -75,7 +76,7 @@ impl Indexer {
     #[inline]
     pub(crate) fn clear(&mut self) {
         match self.inner {
-            Inner::BoolVec(ref mut vec) => vec.clear(),
+            Inner::BitVec(ref mut vec) => vec.clear(),
             Inner::BitArray(ref mut vec) => vec.clear(),
         }
     }
@@ -84,7 +85,7 @@ impl Indexer {
     #[inline]
     pub(crate) fn contains(&self, index: usize) -> bool {
         match self.inner {
-            Inner::BoolVec(ref vec) => vec.contains(index),
+            Inner::BitVec(ref vec) => vec.contains(index),
             Inner::BitArray(ref vec) => vec.contains(index),
         }
     }
@@ -93,7 +94,7 @@ impl Indexer {
     #[inline]
     pub(crate) fn len(&self) -> usize {
         match self.inner {
-            Inner::BoolVec(ref vec) => vec.len(),
+            Inner::BitVec(ref vec) => vec.len(),
             Inner::BitArray(ref vec) => vec.len(),
         }
     }
@@ -102,7 +103,7 @@ impl Indexer {
     #[inline]
     pub(crate) fn is_empty(&self) -> bool {
         match self.inner {
-            Inner::BoolVec(ref vec) => vec.is_empty(),
+            Inner::BitVec(ref vec) => vec.is_empty(),
             Inner::BitArray(ref vec) => vec.is_empty(),
         }
     }
@@ -111,38 +112,42 @@ impl Indexer {
     #[inline]
     pub(crate) fn capacity(&self) -> usize {
         match &self.inner {
-            Inner::BoolVec(vec) => vec.capacity(),
+            Inner::BitVec(vec) => vec.capacity(),
             Inner::BitArray(vec) => vec.capacity(),
         }
     }
 
     /// Resize the Index
+    #[inline]
     pub(crate) fn resize(&mut self, new_len: usize) {
         match &mut self.inner {
-            Inner::BoolVec(vec) => vec.resize(new_len),
+            Inner::BitVec(vec) => vec.resize(new_len),
             Inner::BitArray(arr) => {
                 if new_len > arr.capacity() {
-                    let mut bool_vec = BoolVec::with_capacity(new_len);
+                    let mut bit_vec = BitVec::with_capacity(new_len);
                     for index in arr.occupied() {
-                        bool_vec.insert(index);
+                        bit_vec.insert(index);
                     }
-                    self.inner = Inner::BoolVec(bool_vec);
+                    self.inner = Inner::BitVec(bit_vec);
                 }
             }
         }
     }
 
     /// Create an iterator over the indexes occupied by items.
+    #[inline]
     pub(crate) fn occupied(&self) -> Occupied {
         Occupied::new(self)
     }
 
     /// Create an iterator over the indexes occupied by items.
+    #[inline]
     pub(crate) fn into_occupied(self) -> IntoOccupied {
         IntoOccupied::new(self)
     }
 
     /// Create an iterator over the indexes not occupied by items.
+    #[inline]
     pub(crate) fn unoccupied(&self) -> UnOccupied {
         UnOccupied::new(self)
     }
@@ -150,7 +155,7 @@ impl Indexer {
 
 #[derive(Debug)]
 enum OccupiedInner<'a> {
-    BoolVec(bool_vec::Occupied<'a>),
+    BitVec(bit_vec::Occupied<'a>),
     BitArray(bit_array::Occupied<'a, CAPACITY>),
 }
 
@@ -161,9 +166,9 @@ impl<'a> Occupied<'a> {
     #[inline]
     fn new(bit_tree: &'a Indexer) -> Self {
         match bit_tree.inner {
-            Inner::BoolVec(ref vec) => {
+            Inner::BitVec(ref vec) => {
                 let occupied = vec.occupied();
-                Self(OccupiedInner::BoolVec(occupied))
+                Self(OccupiedInner::BitVec(occupied))
             }
             Inner::BitArray(ref vec) => {
                 let occupied = vec.occupied();
@@ -176,9 +181,10 @@ impl<'a> Occupied<'a> {
 impl<'a> Iterator for Occupied<'a> {
     type Item = usize;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         match self.0 {
-            OccupiedInner::BoolVec(ref mut vec) => vec.next(),
+            OccupiedInner::BitVec(ref mut vec) => vec.next(),
             OccupiedInner::BitArray(ref mut vec) => vec.next(),
         }
     }
@@ -186,7 +192,7 @@ impl<'a> Iterator for Occupied<'a> {
 
 #[derive(Debug)]
 enum UnOccupiedInner<'a> {
-    BoolVec(bool_vec::UnOccupied<'a>),
+    BitVec(bit_vec::UnOccupied<'a>),
     BitArray(bit_array::UnOccupied<'a, CAPACITY>),
 }
 
@@ -197,9 +203,9 @@ impl<'a> UnOccupied<'a> {
     #[inline]
     fn new(bit_tree: &'a Indexer) -> Self {
         match bit_tree.inner {
-            Inner::BoolVec(ref vec) => {
+            Inner::BitVec(ref vec) => {
                 let unoccupied = vec.unoccupied();
-                Self(UnOccupiedInner::BoolVec(unoccupied))
+                Self(UnOccupiedInner::BitVec(unoccupied))
             }
             Inner::BitArray(ref vec) => {
                 let unoccupied = vec.unoccupied();
@@ -212,9 +218,10 @@ impl<'a> UnOccupied<'a> {
 impl<'a> Iterator for UnOccupied<'a> {
     type Item = usize;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         match self.0 {
-            UnOccupiedInner::BoolVec(ref mut vec) => vec.next(),
+            UnOccupiedInner::BitVec(ref mut vec) => vec.next(),
             UnOccupiedInner::BitArray(ref mut vec) => match vec.next() {
                 Some(index) => Some(index),
                 None => Some(u64::BITS as usize * CAPACITY),
@@ -225,7 +232,7 @@ impl<'a> Iterator for UnOccupied<'a> {
 
 #[derive(Debug)]
 enum IntoOccupiedInner {
-    BoolVec(bool_vec::IntoOccupied),
+    BitVec(bit_vec::IntoOccupied),
     BitArray(bit_array::IntoOccupied<CAPACITY>),
 }
 
@@ -236,9 +243,9 @@ impl IntoOccupied {
     #[inline]
     fn new(bit_tree: Indexer) -> Self {
         match bit_tree.inner {
-            Inner::BoolVec(vec) => {
+            Inner::BitVec(vec) => {
                 let occupied = vec.into_occupied();
-                Self(IntoOccupiedInner::BoolVec(occupied))
+                Self(IntoOccupiedInner::BitVec(occupied))
             }
             Inner::BitArray(vec) => {
                 let occupied = vec.into_occupied();
@@ -251,9 +258,10 @@ impl IntoOccupied {
 impl Iterator for IntoOccupied {
     type Item = usize;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         match &mut self.0 {
-            IntoOccupiedInner::BoolVec(ref mut vec) => vec.next(),
+            IntoOccupiedInner::BitVec(ref mut vec) => vec.next(),
             IntoOccupiedInner::BitArray(ref mut vec) => vec.next(),
         }
     }
