@@ -1,5 +1,5 @@
 mod bit_array;
-// mod bit_tree;
+mod bit_tree;
 mod bit_vec;
 
 use bit_array::BitArray;
