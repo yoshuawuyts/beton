@@ -1,3 +1,11 @@
+pub(crate) use into_occupied::IntoOccupied;
+pub(crate) use occupied::Occupied;
+pub(crate) use unoccupied::UnOccupied;
+
+mod into_occupied;
+mod occupied;
+mod unoccupied;
+
 /// An indexing structure implemented as a bit-tree.
 #[derive(Debug)]
 pub(crate) struct BitVec {
@@ -129,148 +137,6 @@ const fn compute_index(index: usize) -> (usize, usize) {
     let byte_position = index / (usize::BITS as usize);
     let bit_mask = 1 << (index % usize::BITS as usize);
     (byte_position, bit_mask)
-}
-
-#[derive(Debug)]
-pub(crate) struct Occupied<'a> {
-    /// What is the current index of the cursor?
-    cursor: usize,
-    /// How many items are we yet to see?
-    remaining: usize,
-    /// The bit tree containing the data
-    bit_array: &'a BitVec,
-}
-
-impl<'a> Occupied<'a> {
-    #[inline]
-    fn new(bit_array: &'a BitVec) -> Self {
-        Self {
-            cursor: 0,
-            remaining: bit_array.len(),
-            bit_array,
-        }
-    }
-}
-
-impl<'a> Iterator for Occupied<'a> {
-    type Item = usize;
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.remaining == 0 {
-            return None;
-        }
-
-        for index in self.cursor..self.bit_array.capacity() {
-            self.cursor += 1;
-            match self.bit_array.contains(index) {
-                true => {
-                    self.remaining -= 1;
-                    return Some(index);
-                }
-                false => continue,
-            }
-        }
-        None
-    }
-}
-
-#[derive(Debug)]
-pub(crate) struct UnOccupied<'a> {
-    /// What is the current index of the cursor?
-    cursor: usize,
-    /// How many items remain?
-    remaining: usize,
-    /// The bit tree containing the data
-    bit_array: &'a BitVec,
-}
-
-impl<'a> UnOccupied<'a> {
-    #[inline]
-    fn new(bit_array: &'a BitVec) -> Self {
-        Self {
-            cursor: 0,
-            remaining: bit_array.capacity() - bit_array.len(),
-            bit_array,
-        }
-    }
-}
-
-impl<'a> Iterator for UnOccupied<'a> {
-    type Item = usize;
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.remaining == 0 {
-            return None;
-        }
-
-        for index in self.cursor..self.bit_array.capacity() {
-            // Check once per byte whether the entire byte is set. If it is we
-            // can skip to the next byte. If it isn't, we iterate over it.
-            if (index % usize::BITS as usize) == 0 {
-                let byte_position = index / (usize::BITS as usize);
-                if self.bit_array.entries[byte_position] == usize::MAX {
-                    self.cursor += usize::BITS as usize;
-                    continue;
-                }
-            } else {
-                self.cursor += 1;
-            }
-            match self.bit_array.contains(index) {
-                false => {
-                    self.remaining -= 1;
-                    return Some(index);
-                }
-                true => continue,
-            }
-        }
-        None
-    }
-}
-
-#[derive(Debug)]
-pub(crate) struct IntoOccupied {
-    /// What is the current index of the cursor?
-    cursor: usize,
-    /// How many items remain?
-    remaining: usize,
-    /// The bit tree containing the data
-    bit_array: BitVec,
-}
-
-impl IntoOccupied {
-    #[inline]
-    fn new(bit_array: BitVec) -> Self {
-        Self {
-            cursor: 0,
-            remaining: bit_array.len(),
-            bit_array,
-        }
-    }
-}
-
-impl Iterator for IntoOccupied {
-    type Item = usize;
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.remaining == 0 {
-            return None;
-        }
-
-        for index in self.cursor..self.bit_array.capacity() {
-            self.cursor += 1;
-            match self.bit_array.contains(index) {
-                true => {
-                    self.remaining -= 1;
-                    return Some(index);
-                }
-                false => continue,
-            }
-        }
-        None
-    }
 }
 
 #[cfg(test)]
