@@ -1,6 +1,7 @@
 mod bit_array;
 mod bit_tree;
 mod bit_vec;
+mod utils;
 
 use bit_array::BitArray;
 use bit_vec::BitVec;

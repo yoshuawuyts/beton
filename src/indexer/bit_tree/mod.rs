@@ -1,3 +1,28 @@
+//! An index implemented as a tree of bits.
+//!
+//! # Design
+//!
+//! The goal of this indexer is to make it fast to find the next unoccupied
+//! slot. We do this by holding two lists: one with each bit for each and every
+//! index, and one tree-structure which makes it faster to identify which pages
+//! are in use and which are not.
+//!
+//! The tree structure is divided into layers. Eeach layer can hold 32|64 items
+//! of the next layer, depending on the system's bit size. At each layer a bit
+//! marked as 0 indicates there is space available in the children of the next
+//! layer. And a bit set to 1 means that there is no space left.
+//!
+//! ```text
+//! 1. [1, 0, 0, 0, 0, 0, ..]
+//!        |
+//! 2. [0, 0, 1, 0, 0, 0, ..]
+//! ```
+//!
+//! The way the pages are laid out in memory is in a tiered fashion. The first
+//! layer exists at the start of the index. The next layer after that. And so
+//! on. This makes it cheap to produce indexes
+
+use super::utils::compute_index;
 pub(crate) use into_occupied::IntoOccupied;
 pub(crate) use occupied::Occupied;
 pub(crate) use unoccupied::UnOccupied;
@@ -6,9 +31,10 @@ mod into_occupied;
 mod occupied;
 mod unoccupied;
 
-/// An indexing structure implemented as a bit-tree.
+/// An indexing structure implemented as a tree of bits.
 #[derive(Debug)]
 pub(crate) struct BitVec {
+    tree: Vec<usize>,
     entries: Vec<usize>,
     count: usize,
 }
@@ -30,7 +56,9 @@ impl BitVec {
     /// Create an empty instance of the `index`
     #[allow(unused)]
     pub(crate) fn with_capacity(capacity: usize) -> Self {
+        let page_capacity = compute_size(capacity);
         Self {
+            tree: vec![0; page_capacity],
             entries: vec![0; capacity],
             count: 0,
         }
@@ -133,15 +161,54 @@ impl BitVec {
 }
 
 #[inline]
-const fn compute_index(index: usize) -> (usize, usize) {
-    let byte_position = index / (usize::BITS as usize);
-    let bit_mask = 1 << (index % usize::BITS as usize);
-    (byte_position, bit_mask)
+const fn compute_depth(mut index: usize) -> usize {
+    let mut depth = 0;
+    loop {
+        index /= usize::BITS as usize;
+        match index {
+            0 => break,
+            _ => depth += 1,
+        }
+    }
+    depth
+}
+
+#[inline]
+const fn compute_size(index: usize) -> usize {
+    let depth = compute_depth(index);
+    (usize::BITS as usize).pow(depth as u32)
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn size() {
+        assert_eq!(compute_size(0), 1);
+        assert_eq!(compute_size(1), 1);
+        assert_eq!(compute_size(2), 1);
+
+        assert_eq!(compute_size(64 - 1), 1);
+        assert_eq!(compute_size(64 + 0), 64);
+    }
+
+    #[test]
+    fn depth() {
+        assert_eq!(compute_depth(0), 0);
+        assert_eq!(compute_depth(1), 0);
+        assert_eq!(compute_depth(2), 0);
+
+        assert_eq!(compute_depth(64 - 1), 0);
+        assert_eq!(compute_depth(64 + 0), 1);
+        assert_eq!(compute_depth(64 + 1), 1);
+        assert_eq!(compute_depth(64 + 2), 1);
+
+        assert_eq!(compute_depth(64usize.pow(2) - 1), 1);
+        assert_eq!(compute_depth(64usize.pow(2) + 0), 2);
+        assert_eq!(compute_depth(64usize.pow(2) + 1), 2);
+        assert_eq!(compute_depth(64usize.pow(2) + 2), 2);
+    }
 
     #[test]
     fn smoke() {
@@ -162,23 +229,6 @@ mod test {
 
         assert_eq!(arr.len(), 0);
         assert!(arr.is_empty());
-    }
-
-    #[test]
-    fn index() {
-        assert_eq!(compute_index(0), (0, 0b00001));
-        assert_eq!(compute_index(1), (0, 0b00010));
-        assert_eq!(compute_index(2), (0, 0b00100));
-
-        assert_eq!(compute_index(64 - 1), (0, 1 << 63));
-        assert_eq!(compute_index(64 + 0), (1, 0b00001));
-        assert_eq!(compute_index(64 + 1), (1, 0b00010));
-        assert_eq!(compute_index(64 + 2), (1, 0b00100));
-
-        assert_eq!(compute_index(128 - 1), (1, 1 << 63));
-        assert_eq!(compute_index(128 + 0), (2, 0b00001));
-        assert_eq!(compute_index(128 + 1), (2, 0b00010));
-        assert_eq!(compute_index(128 + 2), (2, 0b00100));
     }
 
     #[test]
