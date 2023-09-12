@@ -68,7 +68,19 @@ fn insert(c: &mut Criterion) {
             b.iter_batched(setup, routine, BatchSize::SmallInput)
         });
 
-        group.bench_with_input(BenchmarkId::new("slab", i), i, |b, i| {
+        group.bench_with_input(BenchmarkId::new("slab (without index)", i), i, |b, i| {
+            let setup = || slab::Slab::with_capacity(*i);
+            let routine = |mut slab: slab::Slab<usize>| {
+                black_box({
+                    for n in 0..*i {
+                        slab.insert(n);
+                    }
+                });
+            };
+            b.iter_batched(setup, routine, BatchSize::SmallInput)
+        });
+
+        group.bench_with_input(BenchmarkId::new("slab (with index)", i), i, |b, i| {
             let setup = || Slab::with_capacity(*i);
             let routine = |mut slab: Slab| {
                 black_box({
@@ -97,7 +109,7 @@ fn mutate(c: &mut Criterion) {
         Clear,
     }
 
-    group.bench_function(BenchmarkId::new("beton", "main"), |b| {
+    group.bench_function(BenchmarkId::new("beton", "mutate"), |b| {
         let setup = || beton::Slab::new();
         let routine = |mut slab: beton::Slab<usize>| {
             black_box({
@@ -129,7 +141,7 @@ fn mutate(c: &mut Criterion) {
         b.iter_batched(setup, routine, BatchSize::SmallInput)
     });
 
-    group.bench_function(BenchmarkId::new("slab", "main"), |b| {
+    group.bench_function(BenchmarkId::new("slab (without index)", "mutate"), |b| {
         let setup = || Slab::new();
         let routine = |mut slab: Slab| {
             black_box({
@@ -151,12 +163,38 @@ fn mutate(c: &mut Criterion) {
                             }
                             Operation::Clear => {
                                 slab.clear();
-                            } // Operation::Reserve(capacity) => {
-                              //     // NOTE: very big allocations make this slow, so we ensure
-                              //     // they're always a little smaller
-                              //     let capacity = capacity % 1024;
-                              //     slab.reserve(capacity);
-                              // }
+                            }
+                        }
+                    }
+                    Ok(())
+                });
+            });
+        };
+        b.iter_batched(setup, routine, BatchSize::SmallInput)
+    });
+    group.bench_function(BenchmarkId::new("slab (with index)", "mutate"), |b| {
+        let setup = || slab::Slab::new();
+        let routine = |mut slab: slab::Slab<usize>| {
+            black_box({
+                let mut checker = heckcheck::HeckCheck::from_seed(seed);
+                checker.check(|operations: Vec<Operation>| {
+                    for operation in operations {
+                        match operation {
+                            Operation::Insert(value) => {
+                                let _key = slab.insert(value);
+                            }
+                            Operation::Fetch(index) => {
+                                let _output = slab.get(index);
+                            }
+                            Operation::Remove(index) => {
+                                let _output = slab.try_remove(index);
+                            }
+                            Operation::Contains(index) => {
+                                let _contains = slab.contains(index);
+                            }
+                            Operation::Clear => {
+                                slab.clear();
+                            }
                         }
                     }
                     Ok(())
@@ -193,7 +231,29 @@ fn iterate(c: &mut Criterion) {
             b.iter_batched(setup, routine, BatchSize::SmallInput)
         });
 
-        group.bench_with_input(BenchmarkId::new("slab", i), i, |b, i| {
+        group.bench_with_input(BenchmarkId::new("slab (without index)", i), i, |b, i| {
+            let setup = || {
+                let mut slab = slab::Slab::with_capacity(*i);
+                let mut total = 0;
+                for n in 0..*i {
+                    total += n;
+                    slab.insert(n);
+                }
+                (slab, total)
+            };
+            let routine = |(slab, total): (slab::Slab<usize>, usize)| {
+                black_box({
+                    let mut sum = 0;
+                    for (_, n) in slab.iter() {
+                        sum += n;
+                    }
+                    assert_eq!(sum, total);
+                });
+            };
+            b.iter_batched(setup, routine, BatchSize::SmallInput)
+        });
+
+        group.bench_with_input(BenchmarkId::new("slab (with index)", i), i, |b, i| {
             let setup = || {
                 let mut slab = Slab::with_capacity(*i);
                 let mut total = 0;
