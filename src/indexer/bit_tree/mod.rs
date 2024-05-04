@@ -67,10 +67,9 @@ impl BitVec {
     /// Insert an entry into the index
     #[inline]
     pub(crate) fn insert(&mut self, index: usize) {
-        debug_assert!(
-            index < self.capacity(),
-            "Write at index {index} is out of bounds"
-        );
+        if index >= self.capacity() {
+            self.resize(self.capacity() * 2);
+        }
         let (index, mask) = compute_index(index);
         self.entries[index] |= mask;
         self.count += 1;
@@ -94,8 +93,9 @@ impl BitVec {
     /// Clear the entire index
     #[inline]
     pub(crate) fn clear(&mut self) {
-        self.count = 0;
         self.entries.fill(0);
+        self.tree.fill(0);
+        self.count = 0;
     }
 
     /// Returns `true` if the index contains a value
